@@ -12,28 +12,25 @@ const ElementList = () => {
   const [error, setError] = useState(false);
   const [busqueda, setBusqueda] = useState("");
   const [busquedaConRetardo, setBusquedaConRetardo] = useState("");
-  const [personajeSeleccionado, setPersonajeSeleccionado] =
-    useState<Character | null>(null);
+  const [personajeSeleccionado, setPersonajeSeleccionado] = useState<Character | null>(null);
   const [favoritos, setFavoritos] = useState<string[]>([]);
 
+async function fetchCharacters() {
+  try {
+    setCargando(true);
+    setError(false);
+    const data = await api();
+    setCharacters(data);
+  } catch (e) {
+    setError(true);
+  } finally {
+    setCargando(false);
+  }
+}
 
-  useEffect(() => {
-    const fetchCharacters = async () => {
-      try {
-        setCargando(true);
-        setError(false);
-        const data = await api();
-        setCharacters(data);
-      } catch (e) {
-        setError(true);
-      } finally {
-        setCargando(false);
-      }
-    };
-
-    fetchCharacters();
-  }, []);
-
+useEffect(() => {
+  fetchCharacters();
+}, []);
   useEffect(() => {
     const guardado = localStorage.getItem("favoritos");
     if (guardado) {
@@ -78,9 +75,10 @@ const ElementList = () => {
 
   if (error) {
     return (
-      <p className="status-message">
-        Ocurrió un error al cargar los personajes.
-      </p>
+       <div className="status-message">
+      <p>Ocurrió un error al cargar los personajes.</p>
+      <button onClick={fetchCharacters}>Reintentar</button>
+    </div>
     );
   }
 
