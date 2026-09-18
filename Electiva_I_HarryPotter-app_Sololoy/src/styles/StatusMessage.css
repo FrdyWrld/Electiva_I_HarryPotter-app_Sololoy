@@ -1,0 +1,9 @@
+.status-message--loading {
+  color: #666;
+}
+.status-message--error {
+  color: #c0392b;
+}
+.status-message--empty {
+  color: #888;
+}
