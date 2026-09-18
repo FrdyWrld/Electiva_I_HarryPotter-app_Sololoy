@@ -3,6 +3,7 @@ import { api } from "../services/api";
 import type { Character } from "../types/api";
 import SearchBar from "./SearchBar";
 import { DetalleElemento } from "./ElementDetail";
+import { CardElement } from "./CardElement";
 import "../styles/ElementList.css";
 
 const ElementList = () => {
@@ -13,6 +14,8 @@ const ElementList = () => {
   const [busquedaConRetardo, setBusquedaConRetardo] = useState("");
   const [personajeSeleccionado, setPersonajeSeleccionado] =
     useState<Character | null>(null);
+  const [favoritos, setFavoritos] = useState<string[]>([]);
+
 
   useEffect(() => {
     const fetchCharacters = async () => {
@@ -30,6 +33,28 @@ const ElementList = () => {
 
     fetchCharacters();
   }, []);
+
+  useEffect(() => {
+    const guardado = localStorage.getItem("favoritos");
+    if (guardado) {
+      setFavoritos(JSON.parse(guardado));
+    }
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem("favoritos", JSON.stringify(favoritos));
+  }, [favoritos]);
+
+    function toggleFavorito(id: string) {
+    setFavoritos((prev) => {
+      if (prev.includes(id)) {
+        return prev.filter((favId) => favId !== id);
+      }
+      return [...prev, id];
+    });
+  }
+
+  const cantidadFavoritos = favoritos.length;
 
   useEffect(() => {
     const temporizador = setTimeout(() => {
@@ -71,32 +96,20 @@ const ElementList = () => {
   return (
     <div className="characters-container">
       <h1 className="characters-title">Personajes de Harry Potter</h1>
-
       <SearchBar value={busqueda} onChange={setBusqueda} />
-
+      <p>Favoritos: {cantidadFavoritos}</p>
       {personajesFiltrados.length === 0 ? (
         <p className="status-message">No se encontraron personajes.</p>
       ) : (
         <div className="characters-grid">
           {personajesFiltrados.map((character) => (
-            <div
-              className="character-card"
+            <CardElement
               key={character.id}
-              onClick={() => setPersonajeSeleccionado(character)}
-            >
-              <img
-                className="character-image"
-                src={character.attributes.image ?? ""}
-                alt={character.attributes.name}
-              />
-              <div className="character-info">
-                <h2>{character.attributes.name}</h2>
-                <p>{character.attributes.slug}</p>
-                <span className="character-house">
-                  {character.attributes.house ?? "Sin casa"}
-                </span>
-              </div>
-            </div>
+              character={character}
+              onSeleccionar={setPersonajeSeleccionado}
+              esFavorito={favoritos.includes(character.id)}
+              onToggleFavorito={() => toggleFavorito(character.id)}
+            />
           ))}
         </div>
       )}
