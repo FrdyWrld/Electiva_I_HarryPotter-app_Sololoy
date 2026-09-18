@@ -2,7 +2,8 @@ import { useState, useEffect } from "react";
 import { api } from "../services/api";
 import type { Character } from "../types/api";
 import SearchBar from "./SearchBar";
-import '../styles/ElementList.css';
+import { DetalleElemento } from "./ElementDetail";
+import "../styles/ElementList.css";
 
 const ElementList = () => {
   const [characters, setCharacters] = useState<Character[]>([]);
@@ -10,6 +11,8 @@ const ElementList = () => {
   const [error, setError] = useState(false);
   const [busqueda, setBusqueda] = useState("");
   const [busquedaConRetardo, setBusquedaConRetardo] = useState("");
+  const [personajeSeleccionado, setPersonajeSeleccionado] =
+    useState<Character | null>(null);
 
   useEffect(() => {
     const fetchCharacters = async () => {
@@ -41,7 +44,7 @@ const ElementList = () => {
   const personajesFiltrados = characters.filter((character) =>
     character.attributes.name
       .toLowerCase()
-      .includes(busquedaConRetardo.toLowerCase())
+      .includes(busquedaConRetardo.toLowerCase()),
   );
 
   if (cargando) {
@@ -49,7 +52,20 @@ const ElementList = () => {
   }
 
   if (error) {
-    return <p className="status-message">Ocurrió un error al cargar los personajes.</p>;
+    return (
+      <p className="status-message">
+        Ocurrió un error al cargar los personajes.
+      </p>
+    );
+  }
+
+  if (personajeSeleccionado) {
+    return (
+      <DetalleElemento
+        character={personajeSeleccionado}
+        onVolver={() => setPersonajeSeleccionado(null)}
+      />
+    );
   }
 
   return (
@@ -63,10 +79,14 @@ const ElementList = () => {
       ) : (
         <div className="characters-grid">
           {personajesFiltrados.map((character) => (
-            <div className="character-card" key={character.id}>
+            <div
+              className="character-card"
+              key={character.id}
+              onClick={() => setPersonajeSeleccionado(character)}
+            >
               <img
                 className="character-image"
-                src={character.attributes.image ?? "https://via.placeholder.com/150"}
+                src={character.attributes.image ?? ""}
                 alt={character.attributes.name}
               />
               <div className="character-info">
