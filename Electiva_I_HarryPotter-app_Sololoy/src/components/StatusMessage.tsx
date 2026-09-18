@@ -1,3 +1,5 @@
+import "../styles/StatusMessage.css";
+
 type StatusType = "loading" | "error" | "empty";
 
 interface StatusMessageProps {
