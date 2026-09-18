@@ -1,51 +1,72 @@
 import { useState, useEffect } from "react";
 import { api } from "../services/api";
 import type { Character } from "../types/api";
-import StatusMessage from "./StatusMessage";
-import "../styles/ElementList.css";
-
-type Status = "loading" | "error" | "empty" | "success";
+import SearchBar from "./SearchBar";
+import '../styles/ElementList.css';
 
 const ElementList = () => {
   const [characters, setCharacters] = useState<Character[]>([]);
-  const [status, setStatus] = useState<Status>("loading");
+  const [cargando, setCargando] = useState(true);
+  const [error, setError] = useState(false);
+  const [busqueda, setBusqueda] = useState("");
+  const [busquedaConRetardo, setBusquedaConRetardo] = useState("");
 
   useEffect(() => {
     const fetchCharacters = async () => {
-      setStatus("loading");
       try {
+        setCargando(true);
+        setError(false);
         const data = await api();
-
-        if (data.length === 0) {
-          setStatus("empty");
-        } else {
-          setCharacters(data);
-          setStatus("success");
-        }
-      } catch (error) {
-        console.error(error);
-        setStatus("error");
+        setCharacters(data);
+      } catch (e) {
+        setError(true);
+      } finally {
+        setCargando(false);
       }
     };
 
     fetchCharacters();
   }, []);
 
+  useEffect(() => {
+    const temporizador = setTimeout(() => {
+      setBusquedaConRetardo(busqueda);
+    }, 400);
+
+    return () => {
+      clearTimeout(temporizador);
+    };
+  }, [busqueda]);
+
+  const personajesFiltrados = characters.filter((character) =>
+    character.attributes.name
+      .toLowerCase()
+      .includes(busquedaConRetardo.toLowerCase())
+  );
+
+  if (cargando) {
+    return <p className="status-message">Cargando personajes...</p>;
+  }
+
+  if (error) {
+    return <p className="status-message">Ocurrió un error al cargar los personajes.</p>;
+  }
+
   return (
     <div className="characters-container">
       <h1 className="characters-title">Personajes de Harry Potter</h1>
 
-      {status === "loading" && <StatusMessage type="loading" />}
-      {status === "error" && <StatusMessage type="error" />}
-      {status === "empty" && <StatusMessage type="empty" />}
+      <SearchBar value={busqueda} onChange={setBusqueda} />
 
-      {status === "success" && (
+      {personajesFiltrados.length === 0 ? (
+        <p className="status-message">No se encontraron personajes.</p>
+      ) : (
         <div className="characters-grid">
-          {characters.map((character) => (
+          {personajesFiltrados.map((character) => (
             <div className="character-card" key={character.id}>
               <img
                 className="character-image"
-                src={character.attributes.image ?? ""}
+                src={character.attributes.image ?? "https://via.placeholder.com/150"}
                 alt={character.attributes.name}
               />
               <div className="character-info">
