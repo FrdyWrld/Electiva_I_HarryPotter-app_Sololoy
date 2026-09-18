@@ -1,9 +1,10 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { api } from "../services/api";
 import type { Character } from "../types/api";
 import SearchBar from "./SearchBar";
 import { DetalleElemento } from "./ElementDetail";
 import { CardElement } from "./CardElement";
+import StatusMessage from "./StatusMessage";
 import "../styles/ElementList.css";
 
 const ElementList = () => {
@@ -13,36 +14,42 @@ const ElementList = () => {
   const [busqueda, setBusqueda] = useState("");
   const [busquedaConRetardo, setBusquedaConRetardo] = useState("");
   const [personajeSeleccionado, setPersonajeSeleccionado] = useState<Character | null>(null);
-  const [favoritos, setFavoritos] = useState<string[]>([]);
-
-async function fetchCharacters() {
-  try {
-    setCargando(true);
-    setError(false);
-    const data = await api();
-    setCharacters(data);
-  } catch (e) {
-    setError(true);
-  } finally {
-    setCargando(false);
-  }
-}
-
-useEffect(() => {
-  fetchCharacters();
-}, []);
-  useEffect(() => {
-    const guardado = localStorage.getItem("favoritos");
-    if (guardado) {
-      setFavoritos(JSON.parse(guardado));
+  const [favoritos, setFavoritos] = useState<string[]>(() => {
+    try {
+      const guardado = localStorage.getItem("favoritos");
+      return guardado ? JSON.parse(guardado) : [];
+    } catch {
+      return [];
     }
+  });
+
+  async function fetchCharacters(signal?: AbortSignal) {
+    try {
+      setCargando(true);
+      setError(false);
+      const data = await api(signal);
+      setCharacters(data);
+    } catch (e) {
+      if (e instanceof DOMException && e.name === "AbortError") {
+        return;
+      }
+      setError(true);
+    } finally {
+      setCargando(false);
+    }
+  }
+
+  useEffect(() => {
+    const controller = new AbortController();
+    fetchCharacters(controller.signal);
+    return () => controller.abort();
   }, []);
 
   useEffect(() => {
     localStorage.setItem("favoritos", JSON.stringify(favoritos));
   }, [favoritos]);
 
-    function toggleFavorito(id: string) {
+  function toggleFavorito(id: string) {
     setFavoritos((prev) => {
       if (prev.includes(id)) {
         return prev.filter((favId) => favId !== id);
@@ -70,15 +77,15 @@ useEffect(() => {
   );
 
   if (cargando) {
-    return <p className="status-message">Cargando personajes...</p>;
+    return <StatusMessage type="loading" />;
   }
 
   if (error) {
     return (
-       <div className="status-message">
-      <p>Ocurrió un error al cargar los personajes.</p>
-      <button onClick={fetchCharacters}>Reintentar</button>
-    </div>
+      <div className="status-message">
+        <StatusMessage type="error" />
+        <button onClick={() => fetchCharacters()}>Reintentar</button>
+      </div>
     );
   }
 
@@ -97,7 +104,7 @@ useEffect(() => {
       <SearchBar value={busqueda} onChange={setBusqueda} />
       <p>Favoritos: {cantidadFavoritos}</p>
       {personajesFiltrados.length === 0 ? (
-        <p className="status-message">No se encontraron personajes.</p>
+        <StatusMessage type="empty" message="No se encontraron personajes" />
       ) : (
         <div className="characters-grid">
           {personajesFiltrados.map((character) => (
